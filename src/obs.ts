@@ -103,7 +103,7 @@ export class OBSTally {
 
 	/**
 	 * Attemps to connect to OBS Studio via obs-websocket using the parameters
-	 * defined in the ${namespace}:websocket Replicant.
+	 * defined on the instance.
 	 */
 	_connectToOBS() {
 		if (this._connectionStatus === 'connected') {
@@ -157,7 +157,7 @@ export class OBSTally {
 	}
 
 	/**
-	 * Updates the programScene replicant with the current value from OBS.
+	 * Updates the programScene data with the current value from OBS.
 	 */
 	_updateProgramScene() {
 		return this._obsWebsocket.getCurrentScene().then((res: any) => {
@@ -173,7 +173,7 @@ export class OBSTally {
 	}
 
 	/**
-	 * Updates the previewScene replicant with the current value from OBS.
+	 * Updates the previewScene data with the current value from OBS.
 	 */
 	_updatePreviewScene() {
 		return this._obsWebsocket.getPreviewScene().then((res: any) => {
