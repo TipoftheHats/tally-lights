@@ -4,10 +4,8 @@
 import tessel = require('tessel'); // tslint:disable-line:no-implicit-dependencies
 
 // Ours
-import {createLogger} from './logger';
 import {Tessel as TesselTypes} from './types/tessel-types';
-
-const log = createLogger('Tally');
+import {readPin, writePin} from './local-tessel';
 
 export const enum TALLY_STATE {
 	NONE = 0,
@@ -38,14 +36,12 @@ const PIN_MAPPING = {
 };
 
 const TALLY_MAPPING = {
-	0: [PIN_MAPPING[0], PIN_MAPPING[1]], // tallyLightIndex: [PGM_PIN, PVW_PIN]
-	1: [PIN_MAPPING[2], PIN_MAPPING[3]],
-	2: [PIN_MAPPING[4], PIN_MAPPING[5]],
-	3: [PIN_MAPPING[6], PIN_MAPPING[7]],
-	4: [PIN_MAPPING[8], PIN_MAPPING[9]],
-	5: [PIN_MAPPING[10], PIN_MAPPING[11]],
-	6: [PIN_MAPPING[12], PIN_MAPPING[13]],
-	7: [PIN_MAPPING[14], PIN_MAPPING[15]],
+	0: [PIN_MAPPING[2], PIN_MAPPING[3]], // tallyLightIndex: [PGM_PIN, PVW_PIN]
+	1: [PIN_MAPPING[4], PIN_MAPPING[5]],
+	2: [PIN_MAPPING[6], PIN_MAPPING[7]],
+	3: [PIN_MAPPING[10], PIN_MAPPING[11]],
+	4: [PIN_MAPPING[12], PIN_MAPPING[13]],
+	5: [PIN_MAPPING[14], PIN_MAPPING[15]],
 } as {
 	[k: number]: [TesselTypes.Pin, TesselTypes.Pin];
 };
@@ -63,20 +59,20 @@ export function setTallyState(lightIndex: number, state: TALLY_STATE) {
 		case TALLY_STATE.NONE:
 			// Turn off PGM and PVW.
 			return Promise.all([
-				togglePin(TALLY_MAPPING[lightIndex][0], false),
-				togglePin(TALLY_MAPPING[lightIndex][1], false)
+				writePin(TALLY_MAPPING[lightIndex][0], 0),
+				writePin(TALLY_MAPPING[lightIndex][1], 0)
 			]);
 		case TALLY_STATE.PROGRAM:
 			// Turn on PGM, turn off PVW.
 			return Promise.all([
-				togglePin(TALLY_MAPPING[lightIndex][0], true),
-				togglePin(TALLY_MAPPING[lightIndex][1], false)
+				writePin(TALLY_MAPPING[lightIndex][0], 1),
+				writePin(TALLY_MAPPING[lightIndex][1], 0)
 			]);
 		case TALLY_STATE.PREVIEW:
 			// Turn off PGM, turn on PVW.
 			return Promise.all([
-				togglePin(TALLY_MAPPING[lightIndex][0], false),
-				togglePin(TALLY_MAPPING[lightIndex][1], true)
+				writePin(TALLY_MAPPING[lightIndex][0], 0),
+				writePin(TALLY_MAPPING[lightIndex][1], 1)
 			]);
 		default:
 			return Promise.reject(new Error(`Invalid tally state provided (${state})`));
@@ -100,30 +96,5 @@ export async function statusReport() {
 	console.log('Status report:');
 	results.forEach((result, index) => {
 		console.log(`\t#${index} | PGM: ${result[0]}, PVW: ${result[1]}`);
-	});
-}
-
-function togglePin(pin: TesselTypes.Pin, on: boolean) {
-	return new Promise((resolve, reject) => {
-		pin.write(on ? 1 : 0, error => {
-			if (error) {
-				log.error('Error toggling pin:', error);
-				reject(error);
-			} else {
-				resolve();
-			}
-		});
-	});
-}
-
-function readPin(pin: TesselTypes.Pin) {
-	return new Promise((resolve, reject) => {
-		pin.read((error, value) => {
-			if (error) {
-				reject(error);
-			} else {
-				resolve(value);
-			}
-		});
 	});
 }

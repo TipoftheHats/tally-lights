@@ -14,11 +14,13 @@
   "description": "Tessel project",
   "main": "lib\\index.js",
   "dependencies": {
+    "lodash.debounce": "^4.0.8",
     "obs-websocket-js": "^1.2.0",
     "tslib": "^1.9.3",
     "winston": "^3.1.0"
   },
   "devDependencies": {
+    "@types/lodash.debounce": "^4.0.4",
     "@types/node": "^10.1.2",
     "trash-cli": "^1.4.0",
     "tslint": "^5.10.0",
