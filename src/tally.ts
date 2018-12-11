@@ -4,7 +4,6 @@
 import tessel = require('tessel'); // tslint:disable-line:no-implicit-dependencies
 
 // Ours
-import {Tessel as TesselTypes} from './types/tessel-types';
 import {readPin, writePin} from './local-tessel';
 
 export const enum TALLY_STATE {
@@ -43,7 +42,7 @@ const TALLY_MAPPING = {
 	4: [PIN_MAPPING[12], PIN_MAPPING[13]],
 	5: [PIN_MAPPING[14], PIN_MAPPING[15]],
 } as {
-	[k: number]: [TesselTypes.Pin, TesselTypes.Pin];
+	[k: number]: [tessel.Pin, tessel.Pin];
 };
 
 export function setTallyState(lightIndex: number, state: TALLY_STATE) {

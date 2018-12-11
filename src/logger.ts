@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as winston from 'winston';
 import * as Transport from 'winston-transport';
 
-const logDrive = '/mnt/sda1';
+const logDrive = '/root';
 const logPath = path.join(logDrive, 'tally-lights.log');
 
 export function createLogger(label: string) {
@@ -34,7 +34,10 @@ export function createLogger(label: string) {
 		transports.push(new winston.transports.File({
 			format,
 			level: 'debug',
-			filename: logPath
+			filename: logPath,
+			maxsize: 1000000, // 1MB
+			tailable: true,
+			maxFiles: 5
 		}));
 	}
 

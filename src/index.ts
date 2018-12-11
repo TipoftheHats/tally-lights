@@ -11,7 +11,6 @@ import tessel = require('tessel'); // tslint:disable-line:no-implicit-dependenci
 // Ours
 import {createLogger} from './logger';
 import {statusReport} from './tally';
-import {Tessel as TesselTypes} from './types/tessel-types';
 import {ATEMTally} from './atem';
 
 const log = createLogger('Main');
@@ -50,13 +49,9 @@ setInterval(() => {
 }, 10000);
 
 async function zeroPins() {
-	if (!process.env.impossibleToBeTrue) {
-		return;
-	}
-
 	log.info('Zeroing all pins...');
 	for (const portName in tessel.port) { // tslint:disable-line:no-for-in
-		const port = tessel.port[portName as keyof TesselTypes.Port] as TesselTypes.Port;
+		const port = tessel.port[portName as 'A' | 'B'];
 		for (const pin of port.pin) {
 			// Only pins 2-7 can be used as pull resistors.
 			if (pin.pin < 2) {

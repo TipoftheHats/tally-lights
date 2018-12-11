@@ -83,9 +83,9 @@ export class ATEMTally {
 		Object.entries(this._inputToTallyLightMap).forEach(([key, tallyNumber]) => {
 			const inputNumber = parseInt(key, 10);
 			if (inputNumber === this.data.programInput) {
-				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PROGRAM);
+				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PREVIEW); // Yes, I know these are flipped.
 			} else if (inputNumber === this.data.previewInput) {
-				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PREVIEW);
+				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PROGRAM); // Yes, I know these are flipped.
 			} else {
 				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.NONE);
 			}
