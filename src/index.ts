@@ -10,31 +10,33 @@ import tessel = require('tessel'); // tslint:disable-line:no-implicit-dependenci
 
 // Ours
 import {createLogger} from './logger';
-import {OBSTally} from './obs';
 import {statusReport} from './tally';
 import {Tessel as TesselTypes} from './types/tessel-types';
+import {ATEMTally} from './atem';
 
 const log = createLogger('Main');
 
-const obsTally = new OBSTally({
-	sceneItemToTallyLightMap: {
-		'Main Camera': 0,
-		'PC Camera': 1,
-		'Crowd Camera': 2,
-		'Interview Camera': 2
+const atemTally = new ATEMTally({
+	inputToTallyLightMap: {
+		1: 0,
+		2: 1,
+		3: 2,
+		4: 3,
+		5: 4,
+		6: 5
 	}
 });
 
-init();
+init().then(() => {
+	log.info('Initialization successful!');
+}).catch(error => {
+	log.error('Initialization failed:', error);
+});
 
 async function init() {
 	await zeroPins();
 
-	await obsTally.connect({
-		ip: '192.168.1.11',
-		port: 4445,
-		password: ''
-	});
+	await atemTally.connect({ip: '192.168.1.17'});
 
 	executeStatusReport();
 	setInterval(() => {
@@ -54,7 +56,7 @@ async function zeroPins() {
 
 	log.info('Zeroing all pins...');
 	for (const portName in tessel.port) { // tslint:disable-line:no-for-in
-		const port = (tessel.port as any)[portName] as TesselTypes.Port;
+		const port = tessel.port[portName as keyof TesselTypes.Port] as TesselTypes.Port;
 		for (const pin of port.pin) {
 			// Only pins 2-7 can be used as pull resistors.
 			if (pin.pin < 2) {

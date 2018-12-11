@@ -14,18 +14,21 @@
   "description": "Tessel project",
   "main": "lib\\index.js",
   "dependencies": {
+    "atem-connection": "^0.8.1",
     "lodash.debounce": "^4.0.8",
-    "obs-websocket-js": "^1.2.0",
+    "obs-websocket-js": "github:haganbmj/obs-websocket-js#v2.0.0",
     "tslib": "^1.9.3",
     "winston": "^3.1.0"
   },
   "devDependencies": {
+    "@supportclass/tsconfig-base": "^1.0.2",
     "@types/lodash.debounce": "^4.0.4",
     "@types/node": "^10.1.2",
+    "obs-websocket-js-types": "github:lange/obs-websocket-js-types#3e0621c75a45cdeb831d68587212fd27b2782708",
     "trash-cli": "^1.4.0",
     "tslint": "^5.10.0",
     "tslint-xo": "^0.7.2",
-    "typescript": "^3.1.3"
+    "typescript": "^3.2.1"
   },
   "repository": "www.github.com/tessel/t2-cli",
   "keywords": [

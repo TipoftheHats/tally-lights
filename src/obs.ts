@@ -1,29 +1,11 @@
 'use strict';
 
 // Packages
-import OBSWebSocket = require('obs-websocket-js');
+import * as OBSWebSocket from 'obs-websocket-js';
 
 // Ours
 import {createLogger} from './logger';
 import * as Tally from './tally';
-
-interface OBSScene {
-	name: string;
-	sources: OBSSource[];
-}
-
-interface OBSSource {
-	cx: number;
-	cy: number;
-	name: string;
-	render: boolean;
-	source_cx: number;
-	source_cy: number;
-	type: string;
-	volume: number;
-	x: number;
-	y: number;
-}
 
 export class OBSTally {
 	ip: string;
@@ -31,8 +13,8 @@ export class OBSTally {
 	password = '';
 	log = createLogger('OBS');
 	data: {
-		previewScene: OBSScene | null;
-		programScene: OBSScene | null;
+		previewScene: OBSWebSocket.Scene | null;
+		programScene: OBSWebSocket.Scene | null;
 	};
 	_connectionStatus: 'connecting' | 'error' | 'disconnected' | 'connected';
 	_reconnectInterval: NodeJS.Timer | undefined;
@@ -70,9 +52,11 @@ export class OBSTally {
 		});
 
 		setInterval(() => {
-			if (this._connectionStatus === 'connected' && !this._obsWebsocket._connected) {
+			if (this._connectionStatus === 'connected' && !(this._obsWebsocket as any)._connected) {
 				this.log.warn('Thought we were connected, but the automatic poll detected we were not. Correcting.');
-				clearInterval(this._reconnectInterval as unknown as number);
+				if (this._reconnectInterval) {
+					clearInterval(this._reconnectInterval);
+				}
 				this._reconnectInterval = undefined;
 				this._reconnectToOBS();
 			}
@@ -117,7 +101,9 @@ export class OBSTally {
 			password: this.password
 		}).then(() => {
 			this.log.info('Connected.');
-			clearInterval(this._reconnectInterval as unknown as number);
+			if (this._reconnectInterval) {
+				clearInterval(this._reconnectInterval);
+			}
 			this._reconnectInterval = undefined;
 			this._connectionStatus = 'connected';
 			return this._fullUpdate();
@@ -160,7 +146,7 @@ export class OBSTally {
 	 * Updates the programScene data with the current value from OBS.
 	 */
 	_updateProgramScene() {
-		return this._obsWebsocket.getCurrentScene().then((res: any) => {
+		return this._obsWebsocket.send('GetCurrentScene').then((res: any) => {
 			this.data.programScene = {
 				name: res.name,
 				sources: res.sources
@@ -176,7 +162,7 @@ export class OBSTally {
 	 * Updates the previewScene data with the current value from OBS.
 	 */
 	_updatePreviewScene() {
-		return this._obsWebsocket.getPreviewScene().then((res: any) => {
+		return this._obsWebsocket.send('GetPreviewScene').then((res: any) => {
 			this.data.previewScene = {
 				name: res.name,
 				sources: res.sources
@@ -210,7 +196,7 @@ export class OBSTally {
 	}
 }
 
-function findSceneItemByName(scene: OBSScene, name: string) {
+function findSceneItemByName(scene: OBSWebSocket.Scene, name: string) {
 	return scene.sources.find(source => {
 		return source.name === name;
 	});

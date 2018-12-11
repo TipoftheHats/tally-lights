@@ -4,6 +4,8 @@
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 // TypeScript Version: 2.4
 
-import {Tessel} from './tessel-types';
-declare const tessel: Tessel.Interface;
-export = tessel;
+declare module 'tessel' {
+	import {Tessel} from './tessel-types';
+	declare const tessel: Tessel.Interface;
+	export = tessel;
+}
