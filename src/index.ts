@@ -1,17 +1,26 @@
 'use strict';
 
-import {writePin} from './local-tessel';
-
 console.log('Initializing...');
 console.log('Current node version: ' + process.version);
 
-// Packages
+// Native
 import tessel = require('tessel'); // tslint:disable-line:no-implicit-dependencies
+
+// Packages
+import * as Sentry from '@sentry/node';
 
 // Ours
 import {createLogger} from './logger';
 import {statusReport} from './tally';
 import {ATEMTally} from './atem';
+import config from './config';
+import {writePin} from './local-tessel';
+
+if (config.get('sentry.enabled')) {
+	Sentry.init({
+		dsn: config.get('sentry.dsn')
+	});
+}
 
 const log = createLogger('Main');
 
@@ -35,7 +44,7 @@ init().then(() => {
 async function init() {
 	await zeroPins();
 
-	await atemTally.connect({ip: '192.168.1.17'});
+	await atemTally.connect({ip: config.get('atemIp')});
 
 	executeStatusReport();
 	setInterval(() => {
