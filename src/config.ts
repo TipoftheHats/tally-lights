@@ -11,7 +11,7 @@ const conf = convict({
 	atemIp: {
 		doc: 'The IP address of the ATEM.',
 		format: 'ipaddress',
-		default: '10.1.250.5',
+		default: '192.168.1.50',
 		env: 'ATEM_IP'
 	},
 	obsIp: {
