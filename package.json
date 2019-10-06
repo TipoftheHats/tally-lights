@@ -15,8 +15,9 @@
   "main": "lib\\index.js",
   "dependencies": {
     "@sentry/node": "^4.4.2",
-    "atem-connection": "^0.8.1",
+    "atem-connection": "github:lange/tv-automation-atem-connection#8c8846bb4a4fc9449c5ce27af7caf93b6f0e178d",
     "convict": "^4.4.1",
+    "fast-deep-equal": "^2.0.1",
     "lodash.debounce": "^4.0.8",
     "obs-websocket-js": "github:haganbmj/obs-websocket-js#v2.0.0",
     "tslib": "^1.9.3",

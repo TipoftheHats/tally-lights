@@ -2,6 +2,7 @@
 
 // Packages
 import {Atem} from 'atem-connection';
+import * as deepEqual from 'fast-deep-equal';
 
 // Ours
 import {createLogger} from './logger';
@@ -11,8 +12,8 @@ export class ATEMTally {
 	ip: string;
 	log = createLogger('ATEM');
 	data: {
-		previewInput: number;
-		programInput: number;
+		previewInputs: number[];
+		programInputs: number[];
 	};
 	_atem: Atem;
 	_inputToTallyLightMap: {[k: number]: number};
@@ -28,8 +29,8 @@ export class ATEMTally {
 		});
 
 		this.data = {
-			previewInput: 0,
-			programInput: 0
+			previewInputs: [0],
+			programInputs: [0]
 		};
 
 		this._inputToTallyLightMap = inputToTallyLightMap;
@@ -46,20 +47,18 @@ export class ATEMTally {
 			this.log.error('', error);
 		});
 
-		this._atem.on('stateChanged', state => {
-			const me = state.video.getMe(0);
-			if (!me) {
-				return;
-			}
-
+		this._atem.on('stateChanged', () => {
 			let changeDetected = false;
-			if (me.programInput !== this.data.programInput) {
-				this.data.programInput = me.programInput;
+
+			const freshPgmInputs = this._atem.listVisibleInputs('program');
+			if (!deepEqual(freshPgmInputs, this.data.programInputs)) {
+				this.data.programInputs = freshPgmInputs;
 				changeDetected = true;
 			}
 
-			if (me.previewInput !== this.data.previewInput) {
-				this.data.previewInput = me.previewInput;
+			const freshPvwInputs = this._atem.listVisibleInputs('preview');
+			if (!deepEqual(freshPvwInputs, this.data.previewInputs)) {
+				this.data.previewInputs = freshPvwInputs;
 				changeDetected = true;
 			}
 
@@ -82,9 +81,9 @@ export class ATEMTally {
 		// Else, darken.
 		Object.entries(this._inputToTallyLightMap).forEach(([key, tallyNumber]) => {
 			const inputNumber = parseInt(key, 10);
-			if (inputNumber === this.data.programInput) {
+			if (this.data.programInputs.includes(inputNumber)) {
 				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PREVIEW); // Yes, I know these are flipped.
-			} else if (inputNumber === this.data.previewInput) {
+			} else if (this.data.previewInputs.includes(inputNumber)) {
 				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PROGRAM); // Yes, I know these are flipped.
 			} else {
 				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.NONE);
