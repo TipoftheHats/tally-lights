@@ -44,6 +44,7 @@ init().then(() => {
 async function init() {
 	await zeroPins();
 
+	log.info('Connecting to ATEM at %s', config.get('atemIp'));
 	await atemTally.connect({ip: config.get('atemIp')});
 
 	executeStatusReport();

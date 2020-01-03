@@ -1,6 +1,11 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import * as convict from 'convict';
 
+// Ours
+import {createLogger} from './logger';
+
+const log = createLogger('config');
 const conf = convict({
 	mode: {
 		doc: 'The tally mode to use. Mostly determines what the source of data is.',
@@ -36,8 +41,12 @@ const conf = convict({
 	}
 });
 
-if (fs.existsSync('./config.json') && process.env.NODE_ENV !== 'test') {
-	conf.loadFile('./config.json');
+const configPath = path.join(__dirname, '../config.json');
+if (fs.existsSync(configPath) && process.env.NODE_ENV !== 'test') {
+	log.info('Loading config from file.');
+	conf.loadFile(configPath);
+} else {
+	log.warn('No config found, using defaults and env vars.');
 }
 
 // Perform validation
