@@ -22,6 +22,10 @@ initBoard()
 		});
 
 		client.on('setTally', newStates => {
+			if (!newStates || !Array.isArray(newStates)) {
+				return;
+			}
+
 			newStates.forEach(({ channel, state }) => {
 				if (channel !== config.get('light').channel) {
 					return;
