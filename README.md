@@ -1,8 +1,8 @@
 # tally-lights
 
-> Firmware for our in-house tally light system.
+> Firmware for our in-house tally light system. Jointly created by Tip of the Hats and Games Done Quick.
 
-## Developing
-1. Connect your Tessel 2.
-2. Run `npm start` to debug.
-3. When finished, run `npm push` to flash the device for standalone operation.
+## Deployment
+
+1. Set up WiFi AP on RPI: https://www.raspberrypi.org/documentation/configuration/wireless/access-point.md
+2. run lights as sudo

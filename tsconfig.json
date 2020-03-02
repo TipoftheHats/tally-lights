@@ -3,16 +3,11 @@
 	"compilerOptions": {
 		"listFiles": false,
 		"module": "commonjs",
-		"outDir": "./dist",
+		"outDir": "./build",
 		"pretty": true,
 		"sourceMap": true,
 		"traceResolution": false,
-		"types": [
-			"node"
-		]
+		"types": ["node"]
 	},
-	"include": [
-		"src/**/*.ts",
-		"node_modules/obs-websocket-js-types/index.d.ts"
-	]
+	"include": ["src/**/*.ts", "node_modules/obs-websocket-js-types/index.d.ts"]
 }

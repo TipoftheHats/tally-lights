@@ -1,13 +1,14 @@
-'use strict';
+// Native
+import { EventEmitter } from 'events';
 
 // Packages
 import * as OBSWebSocket from 'obs-websocket-js';
 
 // Ours
-import {createLogger} from './logger';
-import * as Tally from './tally';
+import { createLogger } from '../common/logger';
+import { TallyState } from '../types/socket-protocol';
 
-export class OBSTally {
+export class OBSTally extends EventEmitter {
 	ip: string;
 	port = 4444;
 	password = '';
@@ -16,20 +17,19 @@ export class OBSTally {
 		previewScene: OBSWebSocket.Scene | null;
 		programScene: OBSWebSocket.Scene | null;
 	};
-	_connectionStatus: 'connecting' | 'error' | 'disconnected' | 'connected';
-	_reconnectInterval: NodeJS.Timer | undefined;
-	_obsWebsocket = new OBSWebSocket();
-	_ignoreConnectionClosedEvents = false;
-	_sceneItemToTallyLightMap: {[k: string]: number};
 
-	constructor({
-		sceneItemToTallyLightMap
-	}: {
-		sceneItemToTallyLightMap: {[k: string]: number};
-	}) {
+	private _connectionStatus: 'connecting' | 'error' | 'disconnected' | 'connected';
+	private _reconnectInterval: NodeJS.Timer | undefined;
+	private readonly _obsWebsocket = new OBSWebSocket();
+	private readonly _ignoreConnectionClosedEvents = false;
+	private readonly _sceneItemToTallyLightMap: { [k: string]: number };
+
+	constructor({ sceneItemToTallyLightMap }: { sceneItemToTallyLightMap: { [k: string]: number } }) {
+		super();
+
 		this.data = {
 			previewScene: null,
-			programScene: null
+			programScene: null,
 		};
 
 		this._sceneItemToTallyLightMap = sceneItemToTallyLightMap;
@@ -46,7 +46,7 @@ export class OBSTally {
 		this._obsWebsocket.on('PreviewSceneChanged', (data: any) => {
 			this.data.previewScene = {
 				name: data.sceneName,
-				sources: data.sources
+				sources: data.sources,
 			};
 			this._updateTallyLights();
 		});
@@ -57,13 +57,14 @@ export class OBSTally {
 				if (this._reconnectInterval) {
 					clearInterval(this._reconnectInterval);
 				}
+
 				this._reconnectInterval = undefined;
 				this._reconnectToOBS();
 			}
 		}, 1000);
 	}
 
-	connect({ip, port = 4444, password = ''}: {ip: string; port: number; password: string}) {
+	async connect({ ip, port = 4444, password = '' }: { ip: string; port: number; password: string }): Promise<void> {
 		this.ip = ip;
 		this.port = port;
 		this.password = password;
@@ -89,31 +90,34 @@ export class OBSTally {
 	 * Attemps to connect to OBS Studio via obs-websocket using the parameters
 	 * defined on the instance.
 	 */
-	_connectToOBS() {
+	private async _connectToOBS(): Promise<void> {
 		if (this._connectionStatus === 'connected') {
 			throw new Error('Attempted to connect to OBS while already connected!');
 		}
 
 		this._connectionStatus = 'connecting';
 
-		return this._obsWebsocket.connect({
-			address: `${this.ip}:${this.port}`,
-			password: this.password
-		}).then(() => {
-			this.log.info('Connected.');
-			if (this._reconnectInterval) {
-				clearInterval(this._reconnectInterval);
-			}
-			this._reconnectInterval = undefined;
-			this._connectionStatus = 'connected';
-			return this._fullUpdate();
-		});
+		return this._obsWebsocket
+			.connect({
+				address: `${this.ip}:${this.port}`,
+				password: this.password,
+			})
+			.then(async () => {
+				this.log.info('Connected.');
+				if (this._reconnectInterval) {
+					clearInterval(this._reconnectInterval);
+				}
+
+				this._reconnectInterval = undefined;
+				this._connectionStatus = 'connected';
+				this._fullUpdate();
+			});
 	}
 
 	/**
 	 * Attempt to reconnect to OBS, and keep re-trying every 5s until successful.
 	 */
-	_reconnectToOBS() {
+	private _reconnectToOBS(): void {
 		if (this._reconnectInterval) {
 			return;
 		}
@@ -127,7 +131,8 @@ export class OBSTally {
 		this.log.warn('Connection closed, will attempt to reconnect every 5 seconds.');
 		this._reconnectInterval = setInterval(() => {
 			// Intentionally discard error messages -- bit dangerous.
-			this._connectToOBS().catch(() => {}); // tslint:disable-line:no-empty
+			// eslint-disable-next-line @typescript-eslint/no-empty-function
+			this._connectToOBS().catch(() => {});
 		}, 5000);
 	}
 
@@ -135,68 +140,70 @@ export class OBSTally {
 	 * Gets the current scene info from OBS, and detemines what layout is active based
 	 * on the sources present in that scene.
 	 */
-	_fullUpdate() {
-		return Promise.all([
-			this._updateProgramScene(),
-			this._updatePreviewScene()
-		]);
+	private async _fullUpdate(): Promise<void> {
+		await Promise.all([this._updateProgramScene(), this._updatePreviewScene()]);
 	}
 
 	/**
 	 * Updates the programScene data with the current value from OBS.
 	 */
-	_updateProgramScene() {
-		return this._obsWebsocket.send('GetCurrentScene').then((res: any) => {
-			this.data.programScene = {
-				name: res.name,
-				sources: res.sources
-			};
-			this._updateTallyLights();
-			return res;
-		}).catch((err: any) => {
-			this.log.error('Error updating program scene: %s', err ? err : 'unknown error');
-		});
+	private async _updateProgramScene(): Promise<void> {
+		return this._obsWebsocket
+			.send('GetCurrentScene')
+			.then(res => {
+				this.data.programScene = {
+					name: res.name,
+					sources: res.sources,
+				};
+				this._updateTallyLights();
+			})
+			.catch((err: any) => {
+				this.log.error('Error updating program scene: %s', err ? err : 'unknown error');
+			});
 	}
 
 	/**
 	 * Updates the previewScene data with the current value from OBS.
 	 */
-	_updatePreviewScene() {
-		return this._obsWebsocket.send('GetPreviewScene').then((res: any) => {
-			this.data.previewScene = {
-				name: res.name,
-				sources: res.sources
-			};
-			this._updateTallyLights();
-		}).catch((err: any) => {
-			if (err.error === 'studio mode not enabled') {
-				this.data.previewScene = null;
-				return;
-			}
+	private async _updatePreviewScene(): Promise<void> {
+		return this._obsWebsocket
+			.send('GetPreviewScene')
+			.then(res => {
+				this.data.previewScene = {
+					name: res.name,
+					sources: res.sources,
+				};
+				this._updateTallyLights();
+			})
+			.catch((err: any) => {
+				if (err.error === 'studio mode not enabled') {
+					this.data.previewScene = null;
+					return;
+				}
 
-			this.log.error('Error updating preview scene: %s', err ? err : 'unknown error');
-		});
+				this.log.error('Error updating preview scene: %s', err ? err : 'unknown error');
+			});
 	}
 
-	_updateTallyLights() {
+	private _updateTallyLights(): void {
 		this.log.info('Updating tally lights...');
-
-		// If scene item exists in PGM, light red.
-		// Else, if scene item exists in PVW, light green.
-		// Else, darken.
-		Object.entries(this._sceneItemToTallyLightMap).forEach(([key, value]) => {
+		const newState: TallyState[] = [];
+		Object.entries(this._sceneItemToTallyLightMap).forEach(([key, tallyNumber]) => {
+			const s: TallyState = { channel: tallyNumber, state: 'none' };
 			if (this.data.programScene && findSceneItemByName(this.data.programScene, key)) {
-				Tally.setTallyState(value, Tally.TALLY_STATE.PROGRAM);
+				s.state = 'program';
 			} else if (this.data.previewScene && findSceneItemByName(this.data.previewScene, key)) {
-				Tally.setTallyState(value, Tally.TALLY_STATE.PREVIEW);
-			} else {
-				Tally.setTallyState(value, Tally.TALLY_STATE.NONE);
+				s.state = 'preview';
 			}
+
+			newState.push(s);
 		});
+
+		this.emit('update', newState);
 	}
 }
 
-function findSceneItemByName(scene: OBSWebSocket.Scene, name: string) {
+function findSceneItemByName(scene: OBSWebSocket.Scene, name: string): OBSWebSocket.SceneItem | undefined {
 	return scene.sources.find(source => {
 		return source.name === name;
 	});

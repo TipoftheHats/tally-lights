@@ -1,39 +1,40 @@
-'use strict';
+// Native
+import { EventEmitter } from 'events';
 
 // Packages
-import {Atem} from 'atem-connection';
+import { Atem } from 'atem-connection';
 import * as deepEqual from 'fast-deep-equal';
 
 // Ours
-import {createLogger} from './logger';
-import * as Tally from './tally';
+import { createLogger } from '../common/logger';
+import { TallyState } from '../types/socket-protocol';
 
-export class ATEMTally {
+export class ATEMTally extends EventEmitter {
 	ip: string;
 	log = createLogger('ATEM');
 	data: {
 		previewInputs: number[];
 		programInputs: number[];
 	};
-	_atem: Atem;
-	_inputToTallyLightMap: {[k: number]: number};
 
-	constructor({
-		inputToTallyLightMap
-	}: {
-		inputToTallyLightMap: {[k: number]: number};
-	}) {
-		this._atem = new Atem({
-			debug: true,
-			externalLog: this.log.debug
-		});
+	private readonly _atem: Atem;
+	private readonly _inputToTallyLightMap: { [k: number]: number };
+
+	constructor({ inputToTallyLightMap }: { inputToTallyLightMap: { [k: number]: number } }) {
+		super();
+
+		this._atem = new Atem();
 
 		this.data = {
 			previewInputs: [0],
-			programInputs: [0]
+			programInputs: [0],
 		};
 
 		this._inputToTallyLightMap = inputToTallyLightMap;
+
+		this._atem.on('info', info => {
+			this.log.info(info);
+		});
 
 		this._atem.on('connected', () => {
 			this.log.info('Connected.');
@@ -44,7 +45,7 @@ export class ATEMTally {
 		});
 
 		this._atem.on('error', error => {
-			this.log.error('', error);
+			this.log.error(error);
 		});
 
 		this._atem.on('stateChanged', () => {
@@ -68,26 +69,26 @@ export class ATEMTally {
 		});
 	}
 
-	connect({ip}: {ip: string}) {
+	async connect({ ip }: { ip: string }): Promise<void> {
 		this.ip = ip;
 		return this._atem.connect(ip);
 	}
 
-	_updateTallyLights() {
+	private _updateTallyLights(): void {
 		this.log.info('Updating tally lights...');
-
-		// If input is PGM, light red.
-		// Else, if input is PVW, light green.
-		// Else, darken.
+		const newState: TallyState[] = [];
 		Object.entries(this._inputToTallyLightMap).forEach(([key, tallyNumber]) => {
 			const inputNumber = parseInt(key, 10);
+			const s: TallyState = { channel: tallyNumber, state: 'none' };
 			if (this.data.programInputs.includes(inputNumber)) {
-				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PREVIEW); // Yes, I know these are flipped.
+				s.state = 'program';
 			} else if (this.data.previewInputs.includes(inputNumber)) {
-				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.PROGRAM); // Yes, I know these are flipped.
-			} else {
-				Tally.setTallyState(tallyNumber, Tally.TALLY_STATE.NONE);
+				s.state = 'preview';
 			}
+
+			newState.push(s);
 		});
+
+		this.emit('update', newState);
 	}
 }

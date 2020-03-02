@@ -17,7 +17,7 @@ coverage
 
 npm-debug.log
 
-# supportclass-sheets-a8593b4a4bca.json
-
 /desktop.ini
 config.json
+/build
+/logs
